@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.example.ncs.mapper.WordMapper">
+	<resultMap type="com.example.ncs.vo.WordVO" id="wordMap">
+		<result column="rn" property="rn" />
+		<result column="word" property="word" />
+		<result column="mean" property="mean" />
+	</resultMap>
+	
+	<select id="word_list" parameterType="String" resultType="String">
+		SELECT word
+		FROM word
+	</select>
+
+	<select id="word" parameterType="com.example.ncs.Criteria" resultMap="wordMap">
+		SELECT ROW_NUMBER() OVER (ORDER BY date DESC) rn, word
+		FROM word
+		<if test="@com.example.ncs.CustomXMLmethod@isNotEmpty(word)">
+			WHERE word = #{word}
+		</if>
+		ORDER BY rn
+		LIMIT #{pageStart}, #{perPageNum}
+	</select>
+	
+	<select id="word_Cnt" parameterType="com.example.ncs.Criteria" resultType="int">
+		SELECT COUNT(*) FROM (
+		SELECT *
+		FROM word
+		<if test="@com.example.ncs.CustomXMLmethod@isNotEmpty(word)">
+			WHERE word = #{word}
+		</if>
+		) A
+	</select>
+	
+	<select id="mean" parameterType="String" resultType="String">
+		SELECT mean
+		FROM word_mean
+		WHERE word = #{word}
+	</select>
+	
+	<select id="wordSelectOne" parameterType="com.example.ncs.vo.WordVO" resultMap="wordMap">
+		SELECT *
+		FROM word_mean
+		WHERE word = #{word}
+		AND mean = #{mean}
+	</select>
+	
+	<insert id="insert_wm" parameterType="com.example.ncs.vo.WordVO">
+		INSERT INTO word_mean
+		VALUES(#{word}, #{mean}, now())
+	</insert>
+	
+	<insert id="insert_w" parameterType="com.example.ncs.vo.WordVO">
+		INSERT INTO word (word, DATE)
+		SELECT #{word}, NOW()
+		WHERE NOT EXISTS (
+		SELECT *
+		FROM word
+		WHERE word = #{word}
+		)
+	</insert>
+	
+	<update id="update_wm" parameterType="com.example.ncs.vo.WordVO">
+		UPDATE word_mean
+		SET word = #{word}, mean = #{mean}, date = now()
+		WHERE word = #{word}
+		AND mean = #{mean}
+	</update>
+	
+	<delete id="delete_wm" parameterType="com.example.ncs.vo.WordVO">
+		DELETE
+		FROM word_mean
+		WHERE word = #{word}
+	</delete>
+	
+	<delete id="delete_w" parameterType="com.example.ncs.vo.WordVO">
+		DELETE
+		FROM word
+		WHERE word = #{word}
+		AND NOT EXISTS (
+		SELECT *
+		FROM word_mean
+		WHERE word = #{word}
+		)
+	</delete>
+	
+	<select id="quiz" resultType="String">
+		SELECT word
+		FROM word
+		ORDER BY RAND()
+		LIMIT 0, 1
+	</select>
+</mapper>
